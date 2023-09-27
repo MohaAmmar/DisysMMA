@@ -1,5 +1,19 @@
 syntax = "proto3";
 
-option go_package = "proto";
+option go_package = "github.com/MohaAmmar/DisysMMA/Week_4/Mo/proto";
 
 package proto;
+
+service Template {
+    rpc SayHi (Greeting) returns (Farewell);
+}
+
+message Greeting {
+    string ClientName = 1;
+    string message = 2;
+
+}
+
+message Farewell {
+    string message = 1;
+}
