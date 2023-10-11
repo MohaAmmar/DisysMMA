@@ -6,20 +6,28 @@ import (
 	"time"
 )
 
+type Data struct {
+	seq int
+	ack int
+	msg string
+}
+
 func client(comms chan Data) {
 	var seqC int = rand.Intn(10)
 	var ackC int
 
-	fmt.Printf("seqC is %d \n", seqC)
-	data := Data{seqC, 0, "Hello"}
-	comms <- data
+	fmt.Printf("seqC is %d \n\n", seqC)
+	firstShake := Data{seqC, 0, ""}
+	comms <- firstShake
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second / 2)
 
-	newData := <-comms
-	ackC = newData.seq + 1
+	secondShake := <-comms
+	ackC = secondShake.seq + 1
 	fmt.Printf("ackC is %d \n", ackC)
-	fmt.Printf("seqC is %d \n", newData.ack)
+	fmt.Printf("seqC is %d \n\n", secondShake.ack)
+	thirdShake := Data{secondShake.ack, ackC, "Hello"}
+	comms <- thirdShake
 
 }
 
@@ -27,18 +35,19 @@ func server(comms chan Data) {
 	var seqS int = rand.Intn(10)
 	var ackS int
 
-	data := <-comms
-	ackS = data.seq + 1
+	firstShake := <-comms
+	ackS = firstShake.seq + 1
 	fmt.Printf("ackS is %d \n", ackS)
-	fmt.Printf("seqS is %d \n", seqS)
-	newData := Data{seqS, ackS, "Hello"}
-	comms <- newData
-}
+	fmt.Printf("seqS is %d \n\n", seqS)
+	secondShake := Data{seqS, ackS, ""}
+	comms <- secondShake
 
-type Data struct {
-	seq int
-	ack int
-	msg string
+	time.Sleep(time.Second)
+
+	thirdShake := <-comms
+	ackS = thirdShake.seq + 1
+	fmt.Printf("ackS is %d \n", ackS)
+	fmt.Printf("seqS is %d \n\n", thirdShake.ack)
 }
 
 func main() {
