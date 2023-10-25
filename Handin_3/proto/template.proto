@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option go_package = "github.com/MohaAmmar/DisysMMA/Handin_3/proto";
+
+package proto;
+
+service Template{
+    rpc SayHi (Greeting) returns (Farewell);
+}
+
+message Greeting{
+    string clientName = 1;
+    string message = 2;
+
+}
+
+message Farewell{
+    string message = 1;
+}
