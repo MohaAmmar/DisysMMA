@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TemplateClient interface {
-	SayHi(ctx context.Context, in *Greeting, opts ...grpc.CallOption) (*Farewell, error)
+	SayHi(ctx context.Context, opts ...grpc.CallOption) (Template_SayHiClient, error)
 }
 
 type templateClient struct {
@@ -37,20 +37,45 @@ func NewTemplateClient(cc grpc.ClientConnInterface) TemplateClient {
 	return &templateClient{cc}
 }
 
-func (c *templateClient) SayHi(ctx context.Context, in *Greeting, opts ...grpc.CallOption) (*Farewell, error) {
-	out := new(Farewell)
-	err := c.cc.Invoke(ctx, Template_SayHi_FullMethodName, in, out, opts...)
+func (c *templateClient) SayHi(ctx context.Context, opts ...grpc.CallOption) (Template_SayHiClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Template_ServiceDesc.Streams[0], Template_SayHi_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &templateSayHiClient{stream}
+	return x, nil
+}
+
+type Template_SayHiClient interface {
+	Send(*Greeting) error
+	CloseAndRecv() (*Farewell, error)
+	grpc.ClientStream
+}
+
+type templateSayHiClient struct {
+	grpc.ClientStream
+}
+
+func (x *templateSayHiClient) Send(m *Greeting) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *templateSayHiClient) CloseAndRecv() (*Farewell, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(Farewell)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // TemplateServer is the server API for Template service.
 // All implementations must embed UnimplementedTemplateServer
 // for forward compatibility
 type TemplateServer interface {
-	SayHi(context.Context, *Greeting) (*Farewell, error)
+	SayHi(Template_SayHiServer) error
 	mustEmbedUnimplementedTemplateServer()
 }
 
@@ -58,8 +83,8 @@ type TemplateServer interface {
 type UnimplementedTemplateServer struct {
 }
 
-func (UnimplementedTemplateServer) SayHi(context.Context, *Greeting) (*Farewell, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SayHi not implemented")
+func (UnimplementedTemplateServer) SayHi(Template_SayHiServer) error {
+	return status.Errorf(codes.Unimplemented, "method SayHi not implemented")
 }
 func (UnimplementedTemplateServer) mustEmbedUnimplementedTemplateServer() {}
 
@@ -74,22 +99,30 @@ func RegisterTemplateServer(s grpc.ServiceRegistrar, srv TemplateServer) {
 	s.RegisterService(&Template_ServiceDesc, srv)
 }
 
-func _Template_SayHi_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Greeting)
-	if err := dec(in); err != nil {
+func _Template_SayHi_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(TemplateServer).SayHi(&templateSayHiServer{stream})
+}
+
+type Template_SayHiServer interface {
+	SendAndClose(*Farewell) error
+	Recv() (*Greeting, error)
+	grpc.ServerStream
+}
+
+type templateSayHiServer struct {
+	grpc.ServerStream
+}
+
+func (x *templateSayHiServer) SendAndClose(m *Farewell) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *templateSayHiServer) Recv() (*Greeting, error) {
+	m := new(Greeting)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(TemplateServer).SayHi(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Template_SayHi_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TemplateServer).SayHi(ctx, req.(*Greeting))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // Template_ServiceDesc is the grpc.ServiceDesc for Template service.
@@ -98,12 +131,13 @@ func _Template_SayHi_Handler(srv interface{}, ctx context.Context, dec func(inte
 var Template_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.Template",
 	HandlerType: (*TemplateServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "SayHi",
-			Handler:    _Template_SayHi_Handler,
+			StreamName:    "SayHi",
+			Handler:       _Template_SayHi_Handler,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "Handin_3/proto/template.proto",
 }

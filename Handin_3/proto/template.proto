@@ -5,7 +5,7 @@ option go_package = "github.com/MohaAmmar/DisysMMA/Handin_3/proto";
 package proto;
 
 service Template{
-    rpc SayHi (Greeting) returns (Farewell);
+    rpc SayHi (stream Greeting) returns (Farewell);
 }
 
 message Greeting{
